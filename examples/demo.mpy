@@ -1,0 +1,19 @@
+celsius = 100
+fahrenheit = celsius * 9 / 5 + 32
+print(fahrenheit)
+
+x = 7
+y = 3
+print(x + y)
+print(x - y)
+print(x * y)
+print(x / y)
+
+if x == 7:
+    print(True)
+
+grade = 'A'
+print(grade)
+
+flag = False
+print(not flag)
