@@ -1,6 +1,6 @@
 # Mini-Python Interpreter
 
-A modular, educational mini-Python interpreter built in Python 3.10+ using [Lark](https://lark-parser.readthedocs.io/) for grammar specification and parser generation. Includes a **Web-based IDE** for easy access — no terminal required.
+A modular, educational mini-Python interpreter built in Python 3.10+ using [Lark](https://lark-parser.readthedocs.io/) for grammar specification and parser generation. Includes a **Compiler Pipeline Visualizer IDE** — a 3-column browser-based development environment that shows every stage of the compilation process in real time.
 
 ## Table of Contents
 
@@ -8,13 +8,13 @@ A modular, educational mini-Python interpreter built in Python 3.10+ using [Lark
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
 - [Supported Features](#supported-features)
+- [Compiler Visualizer IDE](#compiler-visualizer-ide)
 - [Setup & Installation](#setup--installation)
 - [Usage](#usage)
   - [Web IDE (Recommended)](#web-ide-recommended)
   - [CLI — Run a File](#cli--run-a-file)
   - [CLI — Interactive REPL](#cli--interactive-repl)
 - [Running Tests](#running-tests)
-- [TODO Exercises](#todo-exercises)
 - [Debugging Guide](#debugging-guide)
 
 ---
@@ -37,61 +37,78 @@ Then open **http://localhost:5000** in your browser. That's it — write and run
 
 This interpreter implements a **subset of Python** that supports:
 
-- Integer, float,     character, and boolean literals
+- Integer, float, character, and boolean literals
 - Arithmetic expressions with correct operator precedence
 - Variable assignment (single global scope)
-- Basic conditional statements (`if` / `elif` / `else`)
-- Comparison and boolean operators
+- Conditional statements (`if` / `elif` / `else`)
+- Comparison and boolean operators (`==`, `!=`, `<`, `>`, `<=`, `>=`, `and`, `or`, `not`)
+- Loop constructs (`while`, `for-in`, `do-while`)
+- Array literals, indexing, and index assignment
+- Built-in `range()` and `len()` functions
 - A `print()` statement for output
 
-It is designed as an **academic project** to teach compiler/interpreter design. The codebase is approximately **70–80% complete**; students are expected to implement the remaining `TODO` blocks, run the test suite to validate their work, and debug across the modular layers.
+It is designed as an **academic project** to teach compiler/interpreter design. The codebase is structured into three pipeline stages (Frontend, Middleware, Backend), each responsible for a distinct phase of the compilation process.
 
 ## Architecture
 
-The interpreter follows a classic **three-stage pipeline**:
+The interpreter follows a classic **five-stage compiler pipeline**, fully visualised in the IDE:
 
 ```
 Source Code
     │
     ▼
 ┌──────────────────────────────┐
-│  1. FRONTEND (Lexer/Parser)  │  src/grammar.py + src/lexer_parser.py
-│  Lark tokenises and parses   │
-│  source → AST                │
+│  1. LEXER                    │  Tokenises source into lexemes
+│     (Lark + grammar.py)      │  Output: Token stream
+└──────────────────────────────┘
+    │
+    ▼
+┌──────────────────────────────┐
+│  2. SYNTAX ANALYSER (Parser) │  src/grammar.py + src/lexer_parser.py
+│     Lark LALR parser builds  │  Output: Abstract Syntax Tree (AST)
+│     typed AST from tokens    │
 └──────────────────────────────┘
     │  AST (ast_nodes.py)
     ▼
 ┌──────────────────────────────┐
-│  2. MIDDLEWARE (Sem. Analyzer)│  src/semantic_analyzer.py
-│  Symbol table + type checker │
-│  Catches type/scope errors   │
-└──────────────────────────────┘
-    │  Validated AST
-    ▼
-┌──────────────────────────────┐
-│  3. BACKEND (Evaluator)      │  src/evaluator.py
-│  Visitor-pattern tree walk   │
-│  Executes statements         │
+│  3. SEMANTIC ANALYSER        │  src/semantic_analyzer.py
+│     Symbol table, type       │  Output: Validated AST + symbol table
+│     inference, scope checks  │
 └──────────────────────────────┘
     │
     ▼
-  Output
+┌──────────────────────────────┐
+│  4. VALIDATOR                │  web_app.py (token stream checks)
+│     Delimiter balance,       │  Output: Validation report
+│     literal integrity,       │
+│     structural checks        │
+└──────────────────────────────┘
+    │
+    ▼
+┌──────────────────────────────┐
+│  5. EXECUTOR (Evaluator)     │  src/evaluator.py
+│     Visitor-pattern walk     │  Output: Program output + variables
+│     Executes statements      │
+└──────────────────────────────┘
+    │
+    ▼
+  Output + Variable Store
 ```
 
 Two interfaces connect users to the pipeline:
 
 ```
-            ┌──────────────────────────┐
-            │   Web IDE (web_app.py)   │  ← Browser-based, easiest to use
-            │   http://localhost:5000  │
-            └─────────┬────────────────┘
-                      │
-  Source Code ────────┼──────► Parse → Analyze → Evaluate → Output
-                      │
-            ┌─────────┴────────────────┐
-            │   CLI (src/cli.py)       │  ← Terminal-based (file + REPL)
-            │   python -m src          │
-            └──────────────────────────┘
+            ┌───────────────────────────────────────┐
+            │  Compiler Visualizer IDE (web_app.py) │  ← 3-column browser IDE
+            │  http://localhost:5000                 │     shows all 5 stages + AST
+            └──────────┬────────────────────────────┘
+                       │
+  Source Code ─────────┼──────► Lex → Parse → Analyze → Validate → Execute
+                       │
+            ┌──────────┴────────────────────────────┐
+            │  CLI (src/cli.py)                     │  ← Terminal-based (file + REPL)
+            │  python -m src                        │
+            └───────────────────────────────────────┘
 ```
 
 ### File Structure
@@ -100,14 +117,15 @@ Two interfaces connect users to the pipeline:
 Mini Python Interpreter/
 ├── requirements.txt           # Python dependencies
 ├── README.md                  # This file
-├── web_app.py                 # 🌐 Web IDE server (Flask)
+├── team_task_distribution.md  # Team member file ownership
+├── web_app.py                 # 🌐 Web IDE server (Flask) + enriched API
 │
-├── web/                       # 🌐 Web IDE frontend
+├── web/                       # 🌐 Compiler Visualizer IDE frontend
 │   ├── templates/
-│   │   └── index.html         #    IDE layout & structure
+│   │   └── index.html         #    3-column IDE layout
 │   └── static/
-│       ├── style.css          #    Dark theme design system
-│       └── app.js             #    Editor logic & API calls
+│       ├── style.css          #    Dark theme, stage panels, AST tree styles
+│       └── app.js             #    Pipeline orchestration & AST tree renderer
 │
 ├── examples/
 │   └── demo.mpy               # Example program
@@ -115,11 +133,11 @@ Mini Python Interpreter/
 ├── src/                       # ⚙️ Interpreter core
 │   ├── __init__.py            #    Package init
 │   ├── __main__.py            #    Entry: python -m src
-│   ├── grammar.py             #    Lark EBNF grammar
-│   ├── ast_nodes.py           #    AST node dataclasses
-│   ├── lexer_parser.py        #    Frontend: parsing + AST construction
-│   ├── semantic_analyzer.py   #    Middleware: type checking
-│   ├── evaluator.py           #    Backend: execution engine
+│   ├── grammar.py             #    Lark EBNF grammar (with loops & arrays)
+│   ├── ast_nodes.py           #    AST node dataclasses (24 nodes)
+│   ├── lexer_parser.py        #    Frontend: parsing + AST construction + tokenize()
+│   ├── semantic_analyzer.py   #    Middleware: type checking (int/float/char/bool/array/any)
+│   ├── evaluator.py           #    Backend: execution engine (with loops & arrays)
 │   └── cli.py                 #    CLI interface (file + REPL)
 │
 └── tests/                     # 🧪 Test suite
@@ -139,21 +157,84 @@ Mini Python Interpreter/
 | Subtraction | `x - y` | ✅ Complete |
 | Multiplication | `x * y` | ✅ Complete |
 | True Division | `x / y` | ✅ Complete |
-| Floor Division | `x // y` | 🔧 TODO |
-| Modulo | `x % y` | 🔧 TODO |
-| Exponentiation | `x ** y` | 🔧 TODO |
+| Floor Division | `x // y` | ✅ Complete |
+| Modulo | `x % y` | ✅ Complete |
+| Exponentiation | `x ** y` | ✅ Complete |
 | Unary +/- | `-x`, `+y` | ✅ Complete |
 | Comparisons == != | `x == y` | ✅ Complete |
-| Comparisons < > <= >= | `x < y` | 🔧 TODO |
-| Boolean and/or | `x and y` | 🔧 TODO |
+| Comparisons < > <= >= | `x < y` | ✅ Complete |
+| Boolean and/or | `x and y` | ✅ Complete |
 | Boolean not | `not x` | ✅ Complete |
 | Variable Assignment | `x = 42` | ✅ Complete |
 | `if` statement | `if x == 1:` | ✅ Complete |
-| `elif` clause | `elif x == 2:` | 🔧 TODO |
-| `else` clause | `else:` | 🔧 TODO |
+| `elif` clause | `elif x == 2:` | ✅ Complete |
+| `else` clause | `else:` | ✅ Complete |
+| `while` loop | `while x > 0:` | ✅ Complete |
+| `for-in` loop | `for i in range(5):` | ✅ Complete |
+| `do-while` loop | `do: ... while cond` | ✅ Complete |
+| Array literals | `[1, 2, 3]` | ✅ Complete |
+| Index access | `arr[0]` | ✅ Complete |
+| Index assignment | `arr[2] = 99` | ✅ Complete |
+| `range()` | `range(5)`, `range(1,10,2)` | ✅ Complete |
+| `len()` | `len(arr)` | ✅ Complete |
 | Print | `print(expr)` | ✅ Complete |
 
-> **🔧 TODO** items are left as student exercises with detailed instructions in the source code.
+---
+
+## Compiler Visualizer IDE
+
+The Web IDE is a **3-column compiler pipeline visualizer** that shows every stage of compilation in real time.
+
+### Layout
+
+| Column | Content |
+|---|---|
+| **Left** — Code Editor | Syntax-highlighted textarea with line numbers, Tab support, and example snippet buttons |
+| **Center** — Pipeline Panels | 5 scrollable panels showing the output of each compiler stage |
+| **Right** — AST Tree | Interactive, collapsible tree with branch lines from root to terminals |
+
+### Pipeline Panels
+
+Each panel shows real-time output from a compiler stage:
+
+| # | Panel | What It Shows |
+|---|---|---|
+| 01 | **Lexer** | Token table — Type (colour-coded badge), Lexeme, Line Number |
+| 02 | **Syntax Analyser** | Parse success / syntax error messages with line numbers |
+| 03 | **Semantic Analyser** | Symbol table (variable → type mapping), semantic errors |
+| 04 | **Validator** | Delimiter balance, literal integrity, line structure checks |
+| 05 | **Executor** | Program output lines with execution time |
+
+### AST Tree Panel
+
+- **Branching tree** with CSS-drawn connector lines (`├──` / `└──` style) from root to every leaf
+- **Edge labels** on branches (`left:`, `right:`, `condition:`, `body[0]:`)
+- **Colour-coded nodes** by category: statements (blue), loops (purple), operators (pink), literals (green pill), variables (cyan pill), arrays (orange), builtins (yellow)
+- **Collapsible** — click any parent node to expand/collapse its subtree
+- **Expand All / Collapse All** buttons in the panel header
+
+### Example Snippets
+
+Click any snippet button to load pre-written code:
+
+| Button | What It Demonstrates |
+|---|---|
+| Arithmetic | All operators (`+`, `-`, `*`, `/`, `//`, `%`, `**`) |
+| If/Elif/Else | Conditional branching |
+| While | `while` loop with accumulator |
+| For | `for-in` loop over an array |
+| Do-While | `do-while` loop |
+| Arrays | Array literals, `len()`, indexing, `range()` |
+| Operators | Floor div, modulo, exponentiation, boolean logic |
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Enter` | Run / Compile |
+| `Tab` | Insert 4 spaces |
+
+---
 
 ## Setup & Installation
 
@@ -199,7 +280,7 @@ Mini Python Interpreter/
 
 ### Web IDE (Recommended)
 
-The **easiest way** to use the interpreter — no terminal knowledge needed.
+The **easiest way** to use the interpreter — a full compiler visualizer IDE.
 
 **Start the server:**
 
@@ -215,24 +296,23 @@ http://localhost:5000
 
 **What you get:**
 
-- 📝 **Code editor** with line numbers and Tab indentation support
-- ▶️ **Run button** (or press `Ctrl+Enter`) to execute code instantly
-- 📊 **Three output tabs:**
-  - **Output** — printed results with success/error indicators
-  - **Variables** — table showing all variable names, values, and types
-  - **AST** — the Abstract Syntax Tree visualization
-- 🎯 **Example snippets** — click "Arithmetic", "Variables", "Conditionals", or "Types" to load pre-written examples
-- 🎨 **Color-coded errors** — errors indicate which pipeline stage (Syntax / Semantic / Runtime) caused the problem
+- 📝 **Code editor** with line numbers, Tab indentation, and snippet buttons
+- ▶️ **Run / Compile button** (or press `Ctrl+Enter`) to execute code and populate all panels
+- 📊 **5 simultaneous pipeline panels** — Lexer, Syntax, Semantic, Validator, Executor
+- 🌳 **Interactive AST tree** — collapsible branching tree from root to every terminal
+- 🎯 **7 example snippets** — Arithmetic, If/Elif/Else, While, For, Do-While, Arrays, Operators
+- 🎨 **Colour-coded errors** — errors indicate which pipeline stage caused the problem
 
 **Example workflow:**
 
-1. Click the **"Variables"** snippet button to load sample code
-2. Click **▶ Run** (or press `Ctrl+Enter`)
-3. See the output in the **Output** tab
-4. Switch to the **Variables** tab to inspect variable types
-5. Switch to the **AST** tab to see the parse tree structure
-
-> **Tip:** The Web IDE is stateless — each run executes the full program from scratch. For stateful, line-by-line interaction, use the CLI REPL instead.
+1. Click the **"For"** snippet button to load a for-loop example
+2. Click **▶ Run / Compile** (or press `Ctrl+Enter`)
+3. See the **Lexer** panel populate with the token stream
+4. See the **Syntax Analyser** confirm grammar satisfaction
+5. See the **Semantic Analyser** show the symbol table with variable types
+6. See the **Validator** confirm delimiter balance and literal integrity
+7. See the **Executor** display the output (`15`)
+8. Browse the **AST Tree** on the right — expand/collapse nodes to explore the tree structure
 
 ---
 
@@ -297,7 +377,7 @@ Goodbye!
 
 | Method | Command | Best for |
 |---|---|---|
-| 🌐 **Web IDE** | `python web_app.py` → open browser | Beginners, visual learners, quick testing |
+| 🌐 **Web IDE** | `python web_app.py` → open browser | Visualising the compiler pipeline, debugging, presentations |
 | 📄 **File mode** | `python -m src myfile.mpy` | Running complete programs |
 | 💻 **REPL** | `python -m src` | Interactive line-by-line experimentation |
 
@@ -343,34 +423,6 @@ pytest tests/ -v --cov=src --cov-report=term-missing
 
 > **Tip:** After implementing a TODO, remove the `@pytest.mark.xfail` decorator from the corresponding test(s) so that failures are reported properly.
 
-## TODO Exercises
-
-Search the codebase for `TODO` to find all exercises. Here is a summary:
-
-### Evaluator (`src/evaluator.py`)
-
-| # | Method | Exercise |
-|---|---|---|
-| 1 | `_eval_binary_op` | Implement floor division (`//`) with zero guard |
-| 2 | `_eval_binary_op` | Implement modulo (`%`) with zero guard |
-| 3 | `_eval_binary_op` | Implement exponentiation (`**`) |
-| 4 | `_eval_comparison` | Implement `<`, `>`, `<=`, `>=` |
-| 5 | `_eval_boolean_op` | Implement short-circuit `and` / `or` |
-| 6 | `_exec_if` | Implement `elif` clause evaluation |
-| 7 | `_exec_if` | Implement `else` clause fallback |
-
-### Semantic Analyzer (`src/semantic_analyzer.py`)
-
-| # | Method | Exercise |
-|---|---|---|
-| 1 | `_check_binary_op` | Modulo with float promotion |
-| 2 | `_check_binary_op` | Floor division with float promotion |
-| 3 | `_check_binary_op` | Power with mixed types |
-| 4 | `_check_binary_op` | Error on char operands |
-| 5 | `_check_binary_op` | Error on bool operands |
-| 6 | `_check_comparison` | Bool-to-bool equality comparison |
-| 7 | `_check_comparison` | Explicit cross-type error message |
-
 ## Debugging Guide
 
 ### General Strategy
@@ -382,13 +434,13 @@ Source → [LEXER/PARSER] → AST → [SEMANTIC ANALYZER] → AST → [EVALUATOR
          Syntax errors      Type/scope errors           Runtime errors
 ```
 
-> **Tip:** The **Web IDE** shows which stage caused the error right in the output panel. Look for "Stage: Frontend", "Stage: Middleware", or "Stage: Backend" in the error message.
+> **Tip:** The **Web IDE** shows which stage caused the error right in the pipeline panels. Each panel has a pass/fail badge. Check the first panel with a ✗ badge to find the failing stage.
 
 ### 1. Debugging Syntax Errors (Frontend)
 
 **Symptoms:** `UnexpectedInput`, `UnexpectedToken`, `UnexpectedCharacters`
 
-**In the Web IDE:** You'll see a red error banner with **"Stage: Frontend (Lexer/Parser)"**.
+**In the Web IDE:** The **Syntax Analyser** panel (02) shows a ✗ badge with the error message.
 
 **Steps:**
 
@@ -411,7 +463,7 @@ Source → [LEXER/PARSER] → AST → [SEMANTIC ANALYZER] → AST → [EVALUATOR
 
 **Symptoms:** `SemanticError` with messages like "Type mismatch" or "Undefined variable"
 
-**In the Web IDE:** You'll see **"Stage: Middleware (Semantic Analyzer)"**.
+**In the Web IDE:** The **Semantic Analyser** panel (03) shows a ✗ badge and the symbol table shows inferred types up to the point of failure.
 
 **Steps:**
 
@@ -432,7 +484,7 @@ Source → [LEXER/PARSER] → AST → [SEMANTIC ANALYZER] → AST → [EVALUATOR
 
 **Symptoms:** `EvalError`, wrong output, or Python exceptions
 
-**In the Web IDE:** You'll see **"Stage: Backend (Evaluator)"**.
+**In the Web IDE:** The **Executor** panel (05) shows a ✗ badge with the error message. Previous panels will all show ✓.
 
 **Steps:**
 
@@ -448,7 +500,7 @@ Source → [LEXER/PARSER] → AST → [SEMANTIC ANALYZER] → AST → [EVALUATOR
        print(f"Evaluating: {type(node).__name__} → {node}")
        # ... existing dispatch code ...
    ```
-3. **Inspect variable state** (also visible in the Web IDE's **Variables** tab):
+3. **Inspect variable state** (also visible in the Web IDE's **Semantic Analyser** panel):
    ```python
    from src.evaluator import Evaluator
    from src.lexer_parser import parse
@@ -469,6 +521,8 @@ Source → [LEXER/PARSER] → AST → [SEMANTIC ANALYZER] → AST → [EVALUATOR
 | `isinstance` checks fail | Wrong import path | Always import from `src.ast_nodes` |
 | REPL doesn't accept `if` blocks | Didn't enter empty line | Press Enter on blank line to submit |
 | Web IDE shows "Connection Error" | Server not running | Run `python web_app.py` first |
+| `Index out of bounds` | Invalid array index | Check `len(arr)` before accessing |
+| `While loop exceeded max iterations` | Infinite loop | Add a termination condition |
 
 ---
 

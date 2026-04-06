@@ -20,13 +20,7 @@ Runtime State
 Error Handling
 --------------
 * ``EvalError`` is raised for runtime errors (division by zero, undefined
-  variable access that slipped past semantic analysis, etc.).
-
-TODO Blocks for Students
--------------------------
-Several visitor methods are left partially or fully unimplemented.
-Search for ``TODO`` to find them.  The architectural wiring (dispatcher,
-print, assignment, if-statement skeleton) is complete.
+  variable access, index out of bounds, etc.).
 """
 
 from __future__ import annotations
@@ -36,22 +30,30 @@ from typing import Any
 
 from src.ast_nodes import (
     ASTNode,
+    ArrayLiteral,
     Assignment,
     BinaryOp,
     BooleanOp,
     BoolLiteral,
     CharLiteral,
     Comparison,
+    DoWhileStatement,
     ElifClause,
     ElseClause,
     FloatLiteral,
+    ForStatement,
     IfStatement,
+    IndexAccess,
+    IndexAssignment,
     IntLiteral,
+    LenExpression,
     NotOp,
     PrintStatement,
     Program,
+    RangeExpression,
     UnaryOp,
     Variable,
+    WhileStatement,
 )
 
 
@@ -68,7 +70,14 @@ class EvalError(Exception):
 # Value type (union of all possible runtime values)
 # ---------------------------------------------------------------------------
 
-Value = int | float | str | bool  # str is always a single character
+Value = int | float | str | bool | list  # str is always a single character
+
+
+# ---------------------------------------------------------------------------
+# Safety limits
+# ---------------------------------------------------------------------------
+
+MAX_ITERATIONS = 100_000  # Prevent infinite loops
 
 
 # ---------------------------------------------------------------------------
@@ -84,8 +93,7 @@ class Evaluator:
     variables : dict[str, Value]
         Global variable store.
     output_buffer : io.StringIO
-        Captures ``print`` output for testing.  The CLI drains this
-        after each execution.
+        Captures ``print`` output.
     """
 
     def __init__(self) -> None:
@@ -97,25 +105,11 @@ class Evaluator:
     # -----------------------------------------------------------------------
 
     def execute(self, program: Program) -> str:
-        """
-        Execute a full program and return its captured output.
-
-        Parameters
-        ----------
-        program : Program
-            The root AST node.
-
-        Returns
-        -------
-        str
-            All text written by ``print`` statements.
-        """
         for stmt in program.statements:
             self._exec_statement(stmt)
         return self.output_buffer.getvalue()
 
     def get_variable(self, name: str) -> Value:
-        """Retrieve a variable's current value (useful for testing)."""
         if name not in self.variables:
             raise EvalError(f"Undefined variable: '{name}'")
         return self.variables[name]
@@ -125,73 +119,98 @@ class Evaluator:
     # -----------------------------------------------------------------------
 
     def _exec_statement(self, node: ASTNode) -> None:
-        """Dispatch a statement node to its handler."""
         if isinstance(node, Assignment):
             self._exec_assignment(node)
+        elif isinstance(node, IndexAssignment):
+            self._exec_index_assignment(node)
         elif isinstance(node, PrintStatement):
             self._exec_print(node)
         elif isinstance(node, IfStatement):
             self._exec_if(node)
+        elif isinstance(node, WhileStatement):
+            self._exec_while(node)
+        elif isinstance(node, ForStatement):
+            self._exec_for(node)
+        elif isinstance(node, DoWhileStatement):
+            self._exec_do_while(node)
         else:
             raise EvalError(f"Unknown statement type: {type(node).__name__}")
 
     def _exec_assignment(self, node: Assignment) -> None:
-        """Evaluate the RHS and bind the result to the variable name."""
         value = self._eval(node.value)
         self.variables[node.name] = value
 
+    def _exec_index_assignment(self, node: IndexAssignment) -> None:
+        if node.name not in self.variables:
+            raise EvalError(f"Undefined variable: '{node.name}'")
+        arr = self.variables[node.name]
+        if not isinstance(arr, list):
+            raise EvalError(f"Variable '{node.name}' is not an array")
+        index = self._eval(node.index)
+        if not isinstance(index, int):
+            raise EvalError("Array index must be an integer")
+        if index < 0 or index >= len(arr):
+            raise EvalError(f"Index {index} out of bounds for array of length {len(arr)}")
+        value = self._eval(node.value)
+        arr[index] = value
+
     def _exec_print(self, node: PrintStatement) -> None:
-        """Evaluate the expression and write the result to the output buffer."""
         value = self._eval(node.expression)
-        # Format characters with surrounding quotes to distinguish them
-        # from single-char strings in the output.
-        if isinstance(value, str) and len(value) == 1:
-            self.output_buffer.write(f"{value}\n")
-        elif isinstance(value, bool):
-            # Python's bool is a subclass of int; print True/False explicitly.
-            self.output_buffer.write(f"{value}\n")
-        else:
-            self.output_buffer.write(f"{value}\n")
+        self.output_buffer.write(f"{self._format_value(value)}\n")
 
     def _exec_if(self, node: IfStatement) -> None:
-        """
-        Execute an if / elif / else compound statement.
-
-        TODO (Student Exercise):
-        ────────────────────────
-        The ``if`` branch is implemented below.  You must implement:
-
-          1. **elif evaluation**: Iterate over ``node.elif_clauses``.
-             For each ``ElifClause``, evaluate its condition.  If truthy,
-             execute its body and return immediately (short-circuit).
-
-          2. **else fallback**: If no ``if`` or ``elif`` branch was taken
-             and ``node.else_clause`` is not ``None``, execute the
-             else clause's body.
-
-        HINT:
-          • Use ``self._is_truthy(self._eval(clause.condition))`` to test
-            each elif condition.
-          • Use ``self._exec_block(clause.body)`` to execute a clause's
-            body.
-          • Remember to ``return`` after executing a branch so that
-            subsequent branches are skipped.
-        """
-        # Evaluate the primary 'if' condition.
         if self._is_truthy(self._eval(node.condition)):
             self._exec_block(node.body)
             return
 
-        # ── TODO: Evaluate elif clauses (exercise 1) ──
-        # for clause in node.elif_clauses:
-        #     ...
+        for clause in node.elif_clauses:
+            if self._is_truthy(self._eval(clause.condition)):
+                self._exec_block(clause.body)
+                return
 
-        # ── TODO: Evaluate else clause (exercise 2) ──
-        # if node.else_clause is not None:
-        #     ...
+        if node.else_clause is not None:
+            self._exec_block(node.else_clause.body)
+
+    def _exec_while(self, node: WhileStatement) -> None:
+        iterations = 0
+        while self._is_truthy(self._eval(node.condition)):
+            self._exec_block(node.body)
+            iterations += 1
+            if iterations > MAX_ITERATIONS:
+                raise EvalError(
+                    f"While loop exceeded maximum iterations ({MAX_ITERATIONS}). "
+                    "Possible infinite loop."
+                )
+
+    def _exec_for(self, node: ForStatement) -> None:
+        iterable = self._eval(node.iterable)
+        if not isinstance(iterable, list):
+            raise EvalError("'for' loop requires an iterable (array or range)")
+        iterations = 0
+        for item in iterable:
+            self.variables[node.variable] = item
+            self._exec_block(node.body)
+            iterations += 1
+            if iterations > MAX_ITERATIONS:
+                raise EvalError(
+                    f"For loop exceeded maximum iterations ({MAX_ITERATIONS}). "
+                    "Possible infinite loop."
+                )
+
+    def _exec_do_while(self, node: DoWhileStatement) -> None:
+        iterations = 0
+        while True:
+            self._exec_block(node.body)
+            iterations += 1
+            if iterations > MAX_ITERATIONS:
+                raise EvalError(
+                    f"Do-while loop exceeded maximum iterations ({MAX_ITERATIONS}). "
+                    "Possible infinite loop."
+                )
+            if not self._is_truthy(self._eval(node.condition)):
+                break
 
     def _exec_block(self, statements: tuple[ASTNode, ...]) -> None:
-        """Execute every statement in a block sequentially."""
         for stmt in statements:
             self._exec_statement(stmt)
 
@@ -200,10 +219,6 @@ class Evaluator:
     # -----------------------------------------------------------------------
 
     def _eval(self, node: ASTNode) -> Value:
-        """
-        Central dispatcher — evaluates any expression node by delegating
-        to the appropriate ``_eval_*`` visitor method.
-        """
         if isinstance(node, IntLiteral):
             return node.value
         if isinstance(node, FloatLiteral):
@@ -224,6 +239,14 @@ class Evaluator:
             return self._eval_boolean_op(node)
         if isinstance(node, NotOp):
             return self._eval_not_op(node)
+        if isinstance(node, ArrayLiteral):
+            return self._eval_array_literal(node)
+        if isinstance(node, IndexAccess):
+            return self._eval_index_access(node)
+        if isinstance(node, RangeExpression):
+            return self._eval_range(node)
+        if isinstance(node, LenExpression):
+            return self._eval_len(node)
 
         raise EvalError(f"Cannot evaluate node: {type(node).__name__}")
 
@@ -232,38 +255,11 @@ class Evaluator:
     # -----------------------------------------------------------------------
 
     def _eval_variable(self, node: Variable) -> Value:
-        """Look up a variable in the global store."""
         if node.name not in self.variables:
             raise EvalError(f"Undefined variable: '{node.name}'")
         return self.variables[node.name]
 
     def _eval_binary_op(self, node: BinaryOp) -> Value:
-        """
-        Evaluate a binary arithmetic operation.
-
-        Implemented operators: ``+``, ``-``, ``*``, ``/``
-        (including division-by-zero guard for ``/``).
-
-        TODO (Student Exercise — implement the remaining operators):
-        ─────────────────────────────────────────────────────────────
-          1. **Floor division (``//``)**:
-             Return ``left // right``.  Guard against division by zero
-             just like true division.
-
-          2. **Modulo (``%``)**:
-             Return ``left % right``.  Guard against modulo by zero
-             (raise ``EvalError("Modulo by zero")``).
-
-          3. **Exponentiation (``**``)**:
-             Return ``left ** right``.  No special guards are needed
-             for the scope of this project, but you may optionally
-             handle ``0 ** negative`` which raises ``ZeroDivisionError``
-             in Python.
-
-        HINT: Follow the pattern of the existing ``+``, ``-``, ``*``,
-        ``/`` branches.  Use Python's built-in operators directly;
-        Python handles int/float promotion automatically.
-        """
         left = self._eval(node.left)
         right = self._eval(node.right)
 
@@ -278,24 +274,20 @@ class Evaluator:
                 if right == 0:
                     raise EvalError("Division by zero")
                 return left / right
-
-            # ── TODO: Floor division '//' (exercise 1) ──
-            # case "//":
-            #     ...
-
-            # ── TODO: Modulo '%' (exercise 2) ──
-            # case "%":
-            #     ...
-
-            # ── TODO: Exponentiation '**' (exercise 3) ──
-            # case "**":
-            #     ...
-
+            case "//":
+                if right == 0:
+                    raise EvalError("Floor division by zero")
+                return left // right
+            case "%":
+                if right == 0:
+                    raise EvalError("Modulo by zero")
+                return left % right
+            case "**":
+                return left ** right
             case _:
                 raise EvalError(f"Unknown binary operator: '{node.op}'")
 
     def _eval_unary_op(self, node: UnaryOp) -> Value:
-        """Evaluate a unary ``+`` or ``-`` prefix operator."""
         operand = self._eval(node.operand)
         if node.op == "+":
             return +operand
@@ -304,22 +296,6 @@ class Evaluator:
         raise EvalError(f"Unknown unary operator: '{node.op}'")
 
     def _eval_comparison(self, node: Comparison) -> bool:
-        """
-        Evaluate a comparison expression and return a boolean.
-
-        Implemented operators: ``==``, ``!=``
-
-        TODO (Student Exercise — implement the remaining operators):
-        ─────────────────────────────────────────────────────────────
-          1. ``<``  — less than
-          2. ``>``  — greater than
-          3. ``<=`` — less than or equal
-          4. ``>=`` — greater than or equal
-
-        HINT: Use Python's built-in comparison operators.  They work
-        correctly for int, float, str (character), and bool values.
-        Follow the ``==`` / ``!=`` pattern exactly.
-        """
         left = self._eval(node.left)
         right = self._eval(node.right)
 
@@ -328,56 +304,62 @@ class Evaluator:
                 return left == right
             case "!=":
                 return left != right
-
-            # ── TODO: Less than '<' (exercise 1) ──
-            # case "<":
-            #     ...
-
-            # ── TODO: Greater than '>' (exercise 2) ──
-            # case ">":
-            #     ...
-
-            # ── TODO: Less than or equal '<=' (exercise 3) ──
-            # case "<=":
-            #     ...
-
-            # ── TODO: Greater than or equal '>=' (exercise 4) ──
-            # case ">=":
-            #     ...
-
+            case "<":
+                return left < right
+            case ">":
+                return left > right
+            case "<=":
+                return left <= right
+            case ">=":
+                return left >= right
             case _:
                 raise EvalError(f"Unknown comparison operator: '{node.op}'")
 
     def _eval_boolean_op(self, node: BooleanOp) -> bool:
-        """
-        Evaluate ``and`` / ``or`` with short-circuit semantics.
-
-        TODO (Student Exercise):
-        ────────────────────────
-        Implement short-circuit evaluation for ``and`` and ``or``:
-
-          • ``and``: If the left operand is falsy, return ``False``
-            immediately **without evaluating the right operand**.
-            Otherwise, return the truthiness of the right operand.
-
-          • ``or``: If the left operand is truthy, return ``True``
-            immediately **without evaluating the right operand**.
-            Otherwise, return the truthiness of the right operand.
-
-        HINT: Use ``self._is_truthy(...)`` to convert values to bool.
-        Evaluate ``self._eval(node.left)`` first, check its truthiness,
-        and only evaluate ``self._eval(node.right)`` if needed.
-        """
-        # ── TODO: Implement short-circuit 'and' / 'or' ──
-        raise EvalError(
-            f"Boolean operator '{node.op}' is not yet implemented. "
-            "Complete the TODO in _eval_boolean_op."
-        )
+        left = self._eval(node.left)
+        if node.op == "and":
+            if not self._is_truthy(left):
+                return False
+            return self._is_truthy(self._eval(node.right))
+        elif node.op == "or":
+            if self._is_truthy(left):
+                return True
+            return self._is_truthy(self._eval(node.right))
+        raise EvalError(f"Unknown boolean operator: '{node.op}'")
 
     def _eval_not_op(self, node: NotOp) -> bool:
-        """Evaluate ``not expr`` — returns the boolean negation."""
         operand = self._eval(node.operand)
         return not self._is_truthy(operand)
+
+    def _eval_array_literal(self, node: ArrayLiteral) -> list:
+        return [self._eval(elem) for elem in node.elements]
+
+    def _eval_index_access(self, node: IndexAccess) -> Value:
+        arr = self._eval(node.array)
+        if not isinstance(arr, list):
+            raise EvalError("Index access requires an array")
+        index = self._eval(node.index)
+        if not isinstance(index, int):
+            raise EvalError("Array index must be an integer")
+        if index < 0 or index >= len(arr):
+            raise EvalError(f"Index {index} out of bounds for array of length {len(arr)}")
+        return arr[index]
+
+    def _eval_range(self, node: RangeExpression) -> list:
+        stop = self._eval(node.stop)
+        start = self._eval(node.start) if node.start is not None else 0
+        step = self._eval(node.step) if node.step is not None else 1
+        if not isinstance(start, int) or not isinstance(stop, int) or not isinstance(step, int):
+            raise EvalError("range() arguments must be integers")
+        if step == 0:
+            raise EvalError("range() step argument must not be zero")
+        return list(range(start, stop, step))
+
+    def _eval_len(self, node: LenExpression) -> int:
+        arg = self._eval(node.argument)
+        if not isinstance(arg, list):
+            raise EvalError("len() requires an array argument")
+        return len(arg)
 
     # -----------------------------------------------------------------------
     # Helpers
@@ -385,20 +367,25 @@ class Evaluator:
 
     @staticmethod
     def _is_truthy(value: Value) -> bool:
-        """
-        Determine the truthiness of a runtime value.
-
-        Rules (matching Python semantics):
-          • ``False``, ``0``, ``0.0`` → falsy
-          • Everything else → truthy (including non-empty characters)
-        """
         if isinstance(value, bool):
             return value
         if isinstance(value, (int, float)):
             return value != 0
         if isinstance(value, str):
             return len(value) > 0
+        if isinstance(value, list):
+            return len(value) > 0
         return bool(value)
+
+    @staticmethod
+    def _format_value(value: Value) -> str:
+        """Format a runtime value for print output."""
+        if isinstance(value, bool):
+            return str(value)
+        if isinstance(value, list):
+            parts = ", ".join(Evaluator._format_value(v) for v in value)
+            return f"[{parts}]"
+        return str(value)
 
 
 # ---------------------------------------------------------------------------
@@ -408,16 +395,6 @@ class Evaluator:
 def evaluate(program: Program) -> tuple[str, dict[str, Value]]:
     """
     Execute a mini-Python program and return its output and variable store.
-
-    Parameters
-    ----------
-    program : Program
-        The root AST node (from ``lexer_parser.parse``).
-
-    Returns
-    -------
-    tuple[str, dict[str, Value]]
-        A 2-tuple of (captured_output, variables_dict).
     """
     evaluator = Evaluator()
     output = evaluator.execute(program)

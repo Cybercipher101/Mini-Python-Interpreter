@@ -11,6 +11,8 @@ Responsibilities:
 Public API:
   • ``parse(source: str) -> Program``  — the single entry-point used by
     downstream modules.
+  • ``tokenize(source: str) -> list[dict]``  — extract raw tokens for the
+    visualizer frontend.
 
 Design Notes:
   • Lark's ``IndentTransformer`` is used as a post-lexer to generate
@@ -28,22 +30,30 @@ from lark.indenter import Indenter
 
 from src.ast_nodes import (
     ASTNode,
+    ArrayLiteral,
     Assignment,
     BinaryOp,
     BooleanOp,
     BoolLiteral,
     CharLiteral,
     Comparison,
+    DoWhileStatement,
     ElifClause,
     ElseClause,
     FloatLiteral,
+    ForStatement,
     IfStatement,
+    IndexAccess,
+    IndexAssignment,
     IntLiteral,
+    LenExpression,
     NotOp,
     PrintStatement,
     Program,
+    RangeExpression,
     UnaryOp,
     Variable,
+    WhileStatement,
 )
 from src.grammar import MINI_PYTHON_GRAMMAR
 
@@ -158,6 +168,9 @@ class ASTBuilder(Transformer):
     def assignment(self, name: Token, value: ASTNode) -> Assignment:
         return Assignment(name=str(name), value=value)
 
+    def index_assignment(self, name: Token, index: ASTNode, value: ASTNode) -> IndexAssignment:
+        return IndexAssignment(name=str(name), index=index, value=value)
+
     def print_statement(self, expression: ASTNode) -> PrintStatement:
         return PrintStatement(expression=expression)
 
@@ -196,6 +209,41 @@ class ASTBuilder(Transformer):
             elif_clauses=tuple(elif_clauses),
             else_clause=else_clause,
         )
+
+    # --- Loops -----------------------------------------------------------
+
+    def while_statement(self, condition: ASTNode, body: tuple) -> WhileStatement:
+        return WhileStatement(condition=condition, body=body)
+
+    def for_statement(self, name: Token, iterable: ASTNode, body: tuple) -> ForStatement:
+        return ForStatement(variable=str(name), iterable=iterable, body=body)
+
+    def do_while_statement(self, body: tuple, condition: ASTNode) -> DoWhileStatement:
+        return DoWhileStatement(condition=condition, body=body)
+
+    # --- Arrays ----------------------------------------------------------
+
+    def empty_array(self) -> ArrayLiteral:
+        return ArrayLiteral(elements=())
+
+    def array_literal(self, *elements: ASTNode) -> ArrayLiteral:
+        return ArrayLiteral(elements=tuple(elements))
+
+    def index_access(self, array: ASTNode, index: ASTNode) -> IndexAccess:
+        return IndexAccess(array=array, index=index)
+
+    # --- Built-in expressions --------------------------------------------
+
+    def range_expr(self, *args: ASTNode) -> RangeExpression:
+        if len(args) == 1:
+            return RangeExpression(start=None, stop=args[0], step=None)
+        elif len(args) == 2:
+            return RangeExpression(start=args[0], stop=args[1], step=None)
+        else:
+            return RangeExpression(start=args[0], stop=args[1], step=args[2])
+
+    def len_expr(self, argument: ASTNode) -> LenExpression:
+        return LenExpression(argument=argument)
 
     # --- Program (root) --------------------------------------------------
 
@@ -246,3 +294,29 @@ def parse(source: str) -> Program:
     tree = _get_parser().parse(source + "\n")  # ensure trailing newline
     ast: Program = ASTBuilder().transform(tree)
     return ast
+
+
+def tokenize(source: str) -> list[dict]:
+    """
+    Tokenize source code and return a list of token dicts for the visualizer.
+
+    Each dict has keys: type, lexeme, line.
+    Returns as many tokens as possible; does not raise on errors.
+    """
+    tokens = []
+    try:
+        parser = _get_parser()
+        lexer_tokens = parser.lex(source + "\n")
+        for tok in lexer_tokens:
+            tok_type = str(tok.type)
+            # Skip internal whitespace/newline tokens
+            if tok_type.startswith("_") or tok_type == "WS_INLINE":
+                continue
+            tokens.append({
+                "type": tok_type,
+                "lexeme": str(tok),
+                "line": getattr(tok, "line", 0),
+            })
+    except Exception:
+        pass  # Return whatever tokens we managed to extract
+    return tokens

@@ -11,10 +11,14 @@ The node hierarchy:
     ASTNode  (base)
     ├── Program
     ├── Assignment
+    ├── IndexAssignment
     ├── PrintStatement
     ├── IfStatement
     ├── ElifClause
     ├── ElseClause
+    ├── WhileStatement
+    ├── ForStatement
+    ├── DoWhileStatement
     ├── BinaryOp
     ├── UnaryOp
     ├── Comparison
@@ -24,7 +28,11 @@ The node hierarchy:
     ├── FloatLiteral
     ├── CharLiteral
     ├── BoolLiteral
-    └── Variable
+    ├── Variable
+    ├── ArrayLiteral
+    ├── IndexAccess
+    ├── RangeExpression
+    └── LenExpression
 """
 
 from __future__ import annotations
@@ -82,6 +90,37 @@ class Variable(ASTNode):
 
 
 # ---------------------------------------------------------------------------
+# Array & Indexing
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ArrayLiteral(ASTNode):
+    """An array literal, e.g. ``[1, 2, 3]``."""
+    elements: tuple[ASTNode, ...]
+
+
+@dataclass(frozen=True)
+class IndexAccess(ASTNode):
+    """Array index access, e.g. ``arr[0]``."""
+    array: ASTNode
+    index: ASTNode
+
+
+@dataclass(frozen=True)
+class RangeExpression(ASTNode):
+    """Built-in ``range(...)`` call producing an array of integers."""
+    start: ASTNode | None
+    stop: ASTNode
+    step: ASTNode | None
+
+
+@dataclass(frozen=True)
+class LenExpression(ASTNode):
+    """Built-in ``len(expr)`` returning the length of an array."""
+    argument: ASTNode
+
+
+# ---------------------------------------------------------------------------
 # Operators
 # ---------------------------------------------------------------------------
 
@@ -134,6 +173,14 @@ class Assignment(ASTNode):
 
 
 @dataclass(frozen=True)
+class IndexAssignment(ASTNode):
+    """Array index assignment: ``arr[i] = expr``."""
+    name: str
+    index: ASTNode
+    value: ASTNode
+
+
+@dataclass(frozen=True)
 class PrintStatement(ASTNode):
     """``print(<expression>)``."""
     expression: ASTNode
@@ -167,6 +214,28 @@ class IfStatement(ASTNode):
     body: tuple[ASTNode, ...]
     elif_clauses: tuple[ElifClause, ...] = field(default_factory=tuple)
     else_clause: ElseClause | None = None
+
+
+@dataclass(frozen=True)
+class WhileStatement(ASTNode):
+    """A ``while`` loop: ``while <condition>: <body>``."""
+    condition: ASTNode
+    body: tuple[ASTNode, ...]
+
+
+@dataclass(frozen=True)
+class ForStatement(ASTNode):
+    """A ``for`` loop: ``for <variable> in <iterable>: <body>``."""
+    variable: str
+    iterable: ASTNode
+    body: tuple[ASTNode, ...]
+
+
+@dataclass(frozen=True)
+class DoWhileStatement(ASTNode):
+    """A ``do-while`` loop: ``do: <body> while <condition>``."""
+    condition: ASTNode
+    body: tuple[ASTNode, ...]
 
 
 @dataclass(frozen=True)

@@ -4,12 +4,13 @@
 
 ---
 
-## All Project Files (14 total)
+## All Project Files (15 total)
 
 ```
 Mini Python Interpreter/
 ├── requirements.txt            ← Member 2
 ├── README.md                   ← Member 1
+├── team_task_distribution.md   ← Member 1
 │
 ├── src/
 │   ├── __init__.py             ← Member 3
@@ -39,104 +40,124 @@ Mini Python Interpreter/
 
 ## 👤 Member 1 — Grammar Design & Documentation
 
-> *"I designed the language grammar and wrote the project documentation."*
+> *"I designed the language grammar — including loops and arrays — and wrote the project documentation."*
 
 ### Files owned:
 
 | File | Type | What it does |
 |---|---|---|
-| **`src/grammar.py`** | ⚙️ Compiler Core | Lark EBNF grammar — defines the entire mini-Python language syntax: operator precedence, statement rules, terminal patterns |
-| `README.md` | Documentation | Project overview, architecture diagram, setup guide, debugging guide |
+| **`src/grammar.py`** | ⚙️ Compiler Core | Lark EBNF grammar — defines the entire mini-Python language syntax: operator precedence, statement rules, terminal patterns, loop constructs (`while`, `for-in`, `do-while`), array literals, indexing, `range()`, `len()` |
+| `README.md` | Documentation | Project overview, 5-stage architecture diagram, feature table, Compiler Visualizer IDE guide, setup/debugging instructions |
+| `team_task_distribution.md` | Documentation | Team member file ownership and presentation plan |
 | `examples/demo.mpy` | Example | Demo program showcasing all language features |
 
 ### What they should know:
 
 - How EBNF grammar rules define the language
-- Why `arith_expr → term → factor → power → atom` encodes precedence
+- Why `arith_expr → term → factor → power → postfix → atom` encodes precedence
 - What LALR parsing is and why Lark uses it
 - How `INDENT` / `DEDENT` tokens handle Python-style indentation
 - How `CHAR`, `INT`, `FLOAT`, `NAME` terminals are defined
+- How the grammar rules for `while_statement`, `for_statement`, `do_while_statement` work
+- How `postfix` rule enables chained indexing (`arr[i]`)
+- How `array_literal`, `range_expr`, and `len_expr` are parsed as atoms
 
-### Lines of code: ~105 (grammar) + ~280 (README) = **~385 lines**
+### Lines of code: ~135 (grammar) + ~390 (README) + ~275 (task dist) = **~800 lines**
 
 ### Can present / demo:
 
 ```python
 # "Here's how the grammar defines operator precedence"
 # Show grammar.py, explain how lower rules = lower precedence
-# arith_expr (+ -) → term (* / // %) → factor (unary) → power (**) → atom
+# arith_expr (+ -) → term (* / // %) → factor (unary) → power (**) → postfix ([]) → atom
+
+# "Here's how loops are defined"
+# while_statement: "while" expression ":" block
+# for_statement: "for" NAME "in" expression ":" block
+# do_while_statement: "do" ":" block "while" expression
+
+# "Here's how arrays are defined"
+# array_literal: "[" expression ("," expression)* "]"
+# index_access: postfix "[" expression "]"
+# range_expr: "range" "(" expression ("," expression)* ")"
 ```
 
 ---
 
 ## 👤 Member 2 — AST Design & Parser Frontend
 
-> *"I designed the AST data structures and built the parser that converts source code into AST nodes."*
+> *"I designed the AST data structures — including nodes for loops and arrays — and built the parser that converts source code into AST nodes."*
 
 ### Files owned:
 
 | File | Type | What it does |
 |---|---|---|
-| **`src/ast_nodes.py`** | ⚙️ Compiler Core | 16 frozen dataclass AST nodes — the data contract between all compiler layers |
-| **`src/lexer_parser.py`** | ⚙️ Compiler Core | `MiniPythonIndenter` for indent/dedent, `ASTBuilder` transformer (18 methods), `parse()` public API |
+| **`src/ast_nodes.py`** | ⚙️ Compiler Core | 24 frozen dataclass AST nodes — the data contract between all compiler layers. Includes nodes for loops (`WhileStatement`, `ForStatement`, `DoWhileStatement`) and arrays (`ArrayLiteral`, `IndexAccess`, `IndexAssignment`, `RangeExpression`, `LenExpression`) |
+| **`src/lexer_parser.py`** | ⚙️ Compiler Core | `MiniPythonIndenter` for indent/dedent, `ASTBuilder` transformer (26 methods), `parse()` and `tokenize()` public APIs |
 | `requirements.txt` | Config | Project dependencies (lark, pytest, flask) |
 
 ### What they should know:
 
 - Why AST nodes are **frozen dataclasses** (immutable, auto `__eq__`, type-safe)
-- The full AST node hierarchy (16 nodes)
+- The full AST node hierarchy (24 nodes across 6 categories):
+  - **Literals** (5): IntLiteral, FloatLiteral, CharLiteral, BoolLiteral, Variable
+  - **Operators** (5): BinaryOp, UnaryOp, Comparison, BooleanOp, NotOp
+  - **Statements** (4): Assignment, IndexAssignment, PrintStatement, IfStatement
+  - **Clauses** (2): ElifClause, ElseClause
+  - **Loops** (3): WhileStatement, ForStatement, DoWhileStatement
+  - **Arrays/Builtins** (4): ArrayLiteral, IndexAccess, RangeExpression, LenExpression
+  - **Root** (1): Program
 - How the `ASTBuilder` Lark `Transformer` works (bottom-up traversal)
 - How `MiniPythonIndenter` generates `INDENT`/`DEDENT` tokens
+- How `tokenize()` extracts a token stream for the visualizer frontend
 - What `propagate_positions=True` does (line/col info for error messages)
 
-### Lines of code: ~150 (ast_nodes) + ~200 (lexer_parser) = **~350 lines**
+### Lines of code: ~176 (ast_nodes) + ~270 (lexer_parser) = **~446 lines**
 
 ### Can present / demo:
 
 ```python
-from src.lexer_parser import parse
-ast = parse("x = 2 + 3 * 4\n")
+from src.lexer_parser import parse, tokenize
+
+ast = parse("x = [1, 2, 3]\nfor i in range(3):\n    print(x[i])\n")
 print(ast)
-# Show the AST structure: Program → Assignment → BinaryOp(+, 2, BinaryOp(*, 3, 4))
-# Explain how 3*4 binds tighter than 2+... because of the grammar hierarchy
+# Show the AST structure: Program → Assignment(arr) + ForStatement(i, range, body)
+# Explain how ArrayLiteral and IndexAccess nodes are constructed
+
+tokens = tokenize("x = 5\nprint(x)")
+print(tokens)
+# [{'type': 'NAME', 'lexeme': 'x', 'line': 1}, {'type': 'OP', ...}, ...]
 ```
 
 ---
 
 ## 👤 Member 3 — Semantic Analysis & CLI Interface
 
-> *"I built the type checker with the symbol table and the command-line interface that ties everything together."*
+> *"I built the type checker with the symbol table — handling arrays and loops — and the command-line interface that ties everything together."*
 
 ### Files owned:
 
 | File | Type | What it does |
 |---|---|---|
-| **`src/semantic_analyzer.py`** | ⚙️ Compiler Core | Symbol table, type inference, type-checking rules for all operators, semantic error reporting |
+| **`src/semantic_analyzer.py`** | ⚙️ Compiler Core | Symbol table, type inference (int/float/char/bool/array/any), type-checking rules for all operators and constructs, semantic error reporting |
 | **`src/cli.py`** | ⚙️ Compiler Core | Pipeline wiring (Parse → Analyze → Evaluate), REPL with state persistence, file execution mode, ANSI color-coded errors |
 | `src/__init__.py` | Package | Package init with module overview |
 | `src/__main__.py` | Entry point | `python -m src` entry point |
 
-### TODO exercises to complete:
-
-| # | Method | Exercise |
-|---|---|---|
-| 1 | `_check_binary_op` | Float promotion for modulo `%` |
-| 2 | `_check_binary_op` | Float promotion for floor division `//` |
-| 3 | `_check_binary_op` | Mixed type rules for power `**` |
-| 4 | `_check_binary_op` | Error guard on `char` operands |
-| 5 | `_check_binary_op` | Error guard on `bool` operands |
-| 6 | `_check_comparison` | Bool-to-bool equality (`==`, `!=`) |
-| 7 | `_check_comparison` | Explicit cross-type error messages |
-
 ### What they should know:
 
-- How the **symbol table** tracks variable names → types
+- How the **symbol table** tracks variable names → types (`int`, `float`, `char`, `bool`, `array`, `any`)
 - How **type inference** works (e.g., `x = 1 + 2.5` → `x` is `float`)
 - How **int → float promotion** works on reassignment
+- How `array` type is inferred for array literals and `range()`
+- How `any` type is used for index-access results and `for` loop variables (element type unknown statically)
+- How the loop condition type is validated (must be bool-compatible)
+- How `len()` is type-checked to require an `array` argument and return `int`
+- How **index assignment** is validated (variable must exist and be `array` type)
 - How the **REPL persists state** across inputs (symbol table + evaluator)
 - The 3 error types and how the CLI color-codes them by stage
 
-### Lines of code: ~470 (semantic_analyzer) + ~195 (cli) = **~665 lines**
+### Lines of code: ~330 (semantic_analyzer) + ~195 (cli) = **~525 lines**
 
 ### Can present / demo:
 
@@ -144,11 +165,12 @@ print(ast)
 from src.lexer_parser import parse
 from src.semantic_analyzer import SemanticAnalyzer
 
-ast = parse("x = 42\ny = x + 1.5\n")
+ast = parse("arr = [1, 2, 3]\ntotal = 0\nfor x in arr:\n    total = total + x\n")
 analyzer = SemanticAnalyzer()
 analyzer.analyze(ast)
 print(analyzer.symbol_table)
-# {'x': 'int', 'y': 'float'}  — shows promotion
+# {'arr': 'array', 'total': 'int', 'x': 'any'}
+# — arr is array, total is int, x is any (element type unknown)
 ```
 
 ```bash
@@ -163,44 +185,36 @@ python -m src
 
 ## 👤 Member 4 — Evaluator, Web IDE & Testing
 
-> *"I built the execution engine using the Visitor Pattern, the web-based IDE, and the complete test suite."*
+> *"I built the execution engine using the Visitor Pattern — including loops and arrays — the Compiler Visualizer IDE, and the complete test suite."*
 
 ### Files owned:
 
 | File | Type | What it does |
 |---|---|---|
-| **`src/evaluator.py`** | ⚙️ Compiler Core | Visitor-pattern AST traversal, variable store, runtime execution, truthiness logic |
-| `web_app.py` | Web Backend | Flask server, `/api/run` endpoint, AST preview generation |
-| `web/templates/index.html` | Web Frontend | IDE layout with code editor, tabs, snippets |
-| `web/static/style.css` | Web Frontend | Dark glassmorphism design system |
-| `web/static/app.js` | Web Frontend | Editor logic, API calls, result rendering |
+| **`src/evaluator.py`** | ⚙️ Compiler Core | Visitor-pattern AST traversal, variable store, runtime execution of all constructs (arithmetic, conditionals, loops, arrays), truthiness logic, infinite-loop protection |
+| `web_app.py` | Web Backend | Flask server, enriched `/api/run` endpoint returning tokens, AST JSON, semantic info, validation checks, output |
+| `web/templates/index.html` | Web Frontend | 3-column IDE layout: editor, 5 pipeline panels, AST tree |
+| `web/static/style.css` | Web Frontend | Dark glassmorphism design system, stage panel accents, branching tree CSS |
+| `web/static/app.js` | Web Frontend | Pipeline orchestration, token table renderer, AST branching tree builder, expand/collapse logic |
 | `tests/test_interpreter.py` | Testing | 85 tests across 5 classes (parser, analyzer, evaluator, integration, edge cases) |
 | `tests/__init__.py` | Package | Test package init |
 
-### TODO exercises to complete:
-
-| # | Method | Exercise |
-|---|---|---|
-| 1 | `_eval_binary_op` | Floor division `//` with zero guard |
-| 2 | `_eval_binary_op` | Modulo `%` with zero guard |
-| 3 | `_eval_binary_op` | Exponentiation `**` |
-| 4 | `_eval_comparison` | Less than `<` |
-| 5 | `_eval_comparison` | Greater than `>` |
-| 6 | `_eval_comparison` | Less or equal `<=` |
-| 7 | `_eval_comparison` | Greater or equal `>=` |
-| 8 | `_eval_boolean_op` | Short-circuit `and` / `or` |
-| 9 | `_exec_if` | `elif` clause evaluation |
-| 10 | `_exec_if` | `else` clause fallback |
-
 ### What they should know:
 
-- The **Visitor Pattern** — how `_eval` dispatches to `_eval_*` methods
+- The **Visitor Pattern** — how `_eval` dispatches to `_eval_*` methods based on node type
 - Difference between **symbol table** (types, analysis-time) vs. **variable store** (values, runtime)
-- How `_is_truthy` determines truthiness (matching Python semantics)
-- How the **Web IDE** sends code to `/api/run` and displays results
+- How `_is_truthy` determines truthiness (matching Python semantics): bool, int/float≠0, non-empty str/list
+- How **`while` loops** execute with `MAX_ITERATIONS` infinite-loop protection
+- How **`for` loops** iterate over arrays/ranges, setting the loop variable each iteration
+- How **`do-while` loops** execute the body before checking the condition
+- How **arrays** are runtime `list` values: literals, index access (with bounds checking), index assignment
+- How **`range()`** produces a Python `list` and supports 1–3 arguments
+- How **`len()`** operates on list values at runtime
+- How the **enriched API** returns structured JSON with tokens, AST, semantic info, validation, and output
+- How the **3-column visualizer** renders 5 pipeline panels + a branching AST tree
 - How `@pytest.mark.xfail` works and when to remove it
 
-### Lines of code: ~300 (evaluator) + ~170 (web_app) + ~120 (HTML) + ~530 (CSS) + ~260 (JS) + ~430 (tests) = **~1810 lines**
+### Lines of code: ~310 (evaluator) + ~250 (web_app) + ~200 (HTML) + ~900 (CSS) + ~660 (JS) + ~430 (tests) = **~2750 lines**
 
 ### Can present / demo:
 
@@ -209,28 +223,29 @@ from src.evaluator import Evaluator
 from src.lexer_parser import parse
 
 ev = Evaluator()
-ast = parse("x = 10\nprint(x * 3 + 2)\n")
+ast = parse("nums = [1, 2, 3, 4, 5]\ntotal = 0\nfor x in nums:\n    total = total + x\nprint(total)\n")
 output = ev.execute(ast)
-print(output)        # "32\n"
-print(ev.variables)  # {'x': 10}
+print(output)        # "15\n"
+print(ev.variables)  # {'nums': [1, 2, 3, 4, 5], 'total': 15, 'x': 5}
 ```
 
 ```bash
-# Also demo the Web IDE
+# Also demo the Compiler Visualizer IDE
 python web_app.py
 # → Open http://localhost:5000
+# → Click "Arrays" snippet → Run — show all 5 panels + AST tree
 ```
 
 ---
 
 ## 📊 Summary Table
 
-| Member | Compiler File(s) | Supporting File(s) | TODOs | Total Lines |
-|---|---|---|---|---|
-| **Member 1** | `grammar.py` | `README.md`, `demo.mpy` | 0 | ~385 |
-| **Member 2** | `ast_nodes.py`, `lexer_parser.py` | `requirements.txt` | 0 | ~350 |
-| **Member 3** | `semantic_analyzer.py`, `cli.py` | `__init__.py`, `__main__.py` | 7 | ~665 |
-| **Member 4** | `evaluator.py` | `web_app.py`, `web/`, `tests/` | 10 | ~1810 |
+| Member | Compiler File(s) | Supporting File(s) | Total Lines |
+|---|---|---|---|
+| **Member 1** | `grammar.py` | `README.md`, `team_task_distribution.md`, `demo.mpy` | ~800 |
+| **Member 2** | `ast_nodes.py`, `lexer_parser.py` | `requirements.txt` | ~446 |
+| **Member 3** | `semantic_analyzer.py`, `cli.py` | `__init__.py`, `__main__.py` | ~525 |
+| **Member 4** | `evaluator.py` | `web_app.py`, `web/`, `tests/` | ~2750 |
 
 ---
 
@@ -238,24 +253,26 @@ python web_app.py
 
 | # | Who | Duration | What they present |
 |---|---|---|---|
-| 1 | **Member 1** | 3 min | Language design: grammar rules, operator precedence, EBNF notation |
-| 2 | **Member 2** | 3 min | AST design: node hierarchy, parser transformer, how source becomes a tree |
-| 3 | **Member 3** | 4 min | Type system: symbol table, type inference, promotion rules, CLI demo |
-| 4 | **Member 4** | 4 min | Execution: Visitor Pattern, runtime evaluation, Web IDE demo |
-| 5 | **All** | 4 min | End-to-end live demo + test suite run + Q&A |
+| 1 | **Member 1** | 3 min | Language design: grammar rules for loops & arrays, operator precedence, EBNF notation |
+| 2 | **Member 2** | 3 min | AST design: 24-node hierarchy, parser transformer, how source becomes a tree, `tokenize()` API |
+| 3 | **Member 3** | 4 min | Type system: symbol table with 6 types (int/float/char/bool/array/any), type inference, loop/array validation, CLI demo |
+| 4 | **Member 4** | 5 min | Execution: Visitor Pattern, loop/array evaluation, enriched API, 3-column Compiler Visualizer IDE demo |
+| 5 | **All** | 5 min | End-to-end live demo: enter code → see tokens → AST → types → validation → output. Q&A |
 
 > [!TIP]
-> **Suggested talking point:** *"Each of us built a separate module, but they all communicate through the AST — Member 2's parser produces it, Member 3's analyzer validates it, and Member 4's evaluator executes it. Member 1's grammar defines what's legal in the first place."*
+> **Suggested talking point:** *"Each of us built a separate module, but they all communicate through the AST — Member 2's parser produces it, Member 3's analyzer validates it, and Member 4's evaluator executes it. Member 1's grammar defines what's legal in the first place. The Compiler Visualizer IDE lets you see all five stages working in real time on the same screen."*
 
 ---
 
 ## ✅ Pre-Presentation Checklist
 
-- [ ] **Member 3**: Complete all 7 semantic analyzer TODOs
-- [ ] **Member 4**: Complete all 10 evaluator TODOs
-- [ ] **Member 4**: Remove `@pytest.mark.xfail` from all completed tests
-- [ ] **All**: Run `pytest tests/ -v` → **85 passed, 0 failed**
+- [x] **All**: All language features implemented (loops, arrays, all operators)
+- [x] **All**: All semantic analyzer type checks complete
+- [x] **All**: All evaluator execution logic complete
+- [ ] **Member 4**: Update test suite for new features (loops, arrays)
+- [ ] **All**: Run `pytest tests/ -v` → **all passed, 0 failed**
 - [ ] **All**: Each person can explain their files line-by-line if asked
 - [ ] **All**: Each person can trace `print(1 + 2)` through their module
 - [ ] **Member 3**: Demo the CLI REPL live
-- [ ] **Member 4**: Demo the Web IDE live
+- [ ] **Member 4**: Demo the Compiler Visualizer IDE live
+- [ ] **All**: Prepare for Q&A on array types, loop semantics, AST tree visualisation
