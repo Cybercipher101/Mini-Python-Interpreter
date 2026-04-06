@@ -37,7 +37,7 @@ Then open **http://localhost:5000** in your browser. That's it — write and run
 
 This interpreter implements a **subset of Python** that supports:
 
-- Integer, float, character, and boolean literals
+- Integer, float,     character, and boolean literals
 - Arithmetic expressions with correct operator precedence
 - Variable assignment (single global scope)
 - Basic conditional statements (`if` / `elif` / `else`)
