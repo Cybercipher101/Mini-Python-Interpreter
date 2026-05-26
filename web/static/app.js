@@ -186,6 +186,12 @@ function resetPanels() {
     setBadge(badgeSemantic, '', '—');
     setBadge(badgeValidator,'', '—');
     setBadge(badgeExecutor, '', '—');
+
+    // Reset pipeline flow indicators
+    ['lexer', 'syntax', 'semantic', 'validator', 'executor'].forEach(s => {
+        const step = document.getElementById('flow-' + s);
+        if (step) step.className = 'pipeline-step';
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -623,6 +629,37 @@ async function runCode() {
 
         // 6. AST tree
         renderAST(data.ast);
+
+        // Update header flow visualizers ("props")
+        const flowLexer = document.getElementById('flow-lexer');
+        if (flowLexer) flowLexer.classList.add('passed');
+
+        const flowSyntax = document.getElementById('flow-syntax');
+        if (flowSyntax) flowSyntax.classList.add(syntaxFailed ? 'failed' : 'passed');
+
+        const flowSemantic = document.getElementById('flow-semantic');
+        if (flowSemantic) {
+            if (!syntaxFailed) {
+                flowSemantic.classList.add(semanticFailed ? 'failed' : 'passed');
+            }
+        }
+
+        const flowValidator = document.getElementById('flow-validator');
+        if (flowValidator) {
+            const checks = (data.validation && data.validation.checks) ? data.validation.checks : [];
+            const hasFail = checks.some(c => c.status === 'fail');
+            const hasWarn = checks.some(c => c.status === 'warn');
+            if (hasFail) flowValidator.classList.add('failed');
+            else if (hasWarn) flowValidator.classList.add('warned');
+            else flowValidator.classList.add('passed');
+        }
+
+        const flowExecutor = document.getElementById('flow-executor');
+        if (flowExecutor) {
+            if (!syntaxFailed && !semanticFailed) {
+                flowExecutor.classList.add(runtimeFailed ? 'failed' : 'passed');
+            }
+        }
 
         // Status indicator
         if (data.success) {

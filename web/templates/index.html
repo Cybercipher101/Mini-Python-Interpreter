@@ -23,7 +23,17 @@
             <span class="version-badge">v2.0</span>
         </div>
         <div class="header-center">
-            <span class="pipeline-label">Lexer → Parser → Semantic → Validator → Executor</span>
+            <div class="pipeline-flow">
+                <span class="pipeline-step" id="flow-lexer">Lexer</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step" id="flow-syntax">Parser</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step" id="flow-semantic">Semantic</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step" id="flow-validator">Validator</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step" id="flow-executor">Executor</span>
+            </div>
         </div>
         <div class="header-right">
             <div class="status-indicator" id="status-indicator">
