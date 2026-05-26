@@ -1,33 +1,32 @@
 /* ====================================================================
-   Mini-Python Compiler Visualizer IDE — Stylesheet v3.0 (Matte HUD)
+   Mini-Python Compiler Visualizer IDE — Stylesheet v4.0 (Metallic HUD)
    ====================================================================
-   Design: Sleek Cyber-Industrial Developer HUD, Solid Dark Matte Cards,
-           Stage Accent Borders, Technical Blueprint Dot-matrix grid.
+   Design: Sleek Machined Metallic HUD, Polished Steel Surfaces,
+           Chrome Double-Bevel Highlights, Reflective Diagonal Sheens.
    Typography: JetBrains Mono (code), Inter (UI).
    Layout: 3-column split-pane — Editor | Pipeline | AST
    ==================================================================== */
 
 /* ── CSS Custom Properties ──────────────────────────────────────── */
 :root {
-    /* Solid Matte Backgrounds (Cyber-Industrial Obsidian) */
-    --bg-primary:    #07080c;
-    --bg-secondary:  #0c0d12;
-    --bg-surface:    #12141c;
-    --bg-elevated:   #171924;
-    --bg-hover:      #1c1e2b;
+    /* Base Obsidian & Metallic Gradients */
+    --bg-primary:         #07080a;
+    --bg-secondary-grad:  linear-gradient(145deg, #161a25 0%, #0b0c11 100%);
+    --bg-surface-grad:    linear-gradient(145deg, #202538 0%, #12141d 100%);
+    --bg-header-grad:     linear-gradient(90deg, #1e2233 0%, #10121a 100%);
 
-    /* Crisp High-Contrast Borders */
-    --border-subtle: #1f2230;
-    --border-medium: #2d3145;
-    --border-active: rgba(99, 102, 241, 0.4);
+    /* Chrome-like Reflective Metallic Borders */
+    --border-subtle: rgba(255, 255, 255, 0.13);
+    --border-medium: rgba(255, 255, 255, 0.23);
+    --border-active: rgba(255, 255, 255, 0.35);
 
-    /* Rich High-Contrast Text */
-    --text-primary:  #f1f5f9;
-    --text-secondary:#94a3b8;
+    /* Rich Contrast Typography */
+    --text-primary:  #f8fafc;
+    --text-secondary:#cbd5e1;
     --text-muted:    #64748b;
     --text-accent:   #818cf8;
 
-    /* Accent Palette */
+    /* Vibrant Accent Palette */
     --accent:        #6366f1;
     --accent-hover:  #7c7ff7;
     --accent-glow:   rgba(99,102,241,0.22);
@@ -67,7 +66,7 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 html {
-    font-size: 15px; /* Increased from 14px for global accessibility */
+    font-size: 15px; /* Scaled typography standard */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -82,11 +81,11 @@ body {
     overflow: hidden;
 }
 
-/* ── Dotted Technical Blueprint Grid Background ─────────────────── */
+/* ── Technical Grid blueprint background ────────────────────────── */
 .bg-grid {
     position: fixed;
     inset: 0;
-    background-image: radial-gradient(rgba(99, 102, 241, 0.07) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1.5px, transparent 1.5px);
     background-size: 28px 28px;
     pointer-events: none;
     z-index: 0;
@@ -105,9 +104,12 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 10px 24px;
-    background: var(--bg-secondary);
+    background: linear-gradient(180deg, #1a1e2b 0%, #0d0e14 100%);
     border-bottom: 1px solid var(--border-subtle);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 
+        inset 0 -1px 0 0 rgba(0,0,0,0.6),
+        inset 0 1px 0 0 rgba(255,255,255,0.1),
+        0 4px 20px rgba(0, 0, 0, 0.6);
     flex-shrink: 0;
     gap: 12px;
 }
@@ -146,9 +148,10 @@ body {
     font-weight: 700;
     padding: 3px 8px;
     border-radius: 20px;
-    background: rgba(99, 102, 241, 0.1);
+    background: linear-gradient(180deg, #1b2033 0%, #0f121e 100%);
     color: var(--text-accent);
-    border: 1px solid rgba(99,102,241,0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.08);
     letter-spacing: 0.05em;
 }
 
@@ -158,16 +161,19 @@ body {
     justify-content: center;
 }
 
-/* ── Pipeline Header Flow "Props" ───────────────────────────────── */
+/* ── Interactive Metallic Pipeline header ───────────────────────── */
 .pipeline-flow {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(7, 8, 12, 0.85);
+    background: linear-gradient(180deg, #12141f 0%, #07080c 100%);
     padding: 6px 16px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255,255,255,0.13);
     border-radius: 30px;
-    box-shadow: inset 0 1px 4px rgba(0,0,0,0.5);
+    box-shadow: 
+        inset 0 1.5px 3px rgba(0,0,0,0.85),
+        inset 0 -1px 0 rgba(255,255,255,0.03),
+        0 4px 12px rgba(0,0,0,0.5);
 }
 
 .pipeline-step {
@@ -189,50 +195,50 @@ body {
     user-select: none;
 }
 
-/* Pipeline lighting effects corresponding to compiler status */
+/* Interactive reflective status glowing steps */
 #flow-lexer.passed {
     color: var(--lexer-color);
-    border-color: rgba(6, 182, 212, 0.25);
+    border-color: rgba(6, 182, 212, 0.4);
     background: rgba(6, 182, 212, 0.08);
-    box-shadow: 0 0 10px rgba(6, 182, 212, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(6, 182, 212, 0.18);
 }
 #flow-syntax.passed {
     color: var(--syntax-color);
-    border-color: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.4);
     background: rgba(99, 102, 241, 0.08);
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(99, 102, 241, 0.18);
 }
 #flow-semantic.passed {
     color: var(--semantic-color);
-    border-color: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.4);
     background: rgba(168, 85, 247, 0.08);
-    box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(168, 85, 247, 0.18);
 }
 #flow-validator.passed {
     color: var(--green);
-    border-color: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.08);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(16, 185, 129, 0.18);
 }
 #flow-executor.passed {
     color: var(--executor-color);
-    border-color: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.4);
     background: rgba(16, 185, 129, 0.08);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(16, 185, 129, 0.18);
 }
 
 .pipeline-step.failed {
     color: var(--red) !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
     background: rgba(239, 68, 68, 0.08) !important;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(239, 68, 68, 0.25) !important;
 }
 
 .pipeline-step.warned {
     color: var(--yellow) !important;
-    border-color: rgba(245, 158, 11, 0.3) !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
     background: rgba(245, 158, 11, 0.08) !important;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 10px rgba(245, 158, 11, 0.25) !important;
 }
 
 .header-right { flex-shrink: 0; }
@@ -274,7 +280,7 @@ body {
     z-index: 5;
     flex: 1;
     display: grid;
-    grid-template-columns: 350px 1fr 320px; /* Slightly wider side columns */
+    grid-template-columns: 350px 1fr 320px;
     grid-template-rows: 1fr;
     gap: 8px;
     padding: 8px;
@@ -289,21 +295,28 @@ body {
     overflow: hidden;
 }
 
-/* ── Solid Matte Panel Base (No glassmorphism blurs) ────────────── */
+/* ── Machined Metallic Plate Panels (Bevels & Reflections) ───────── */
 .panel {
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
+    background: var(--bg-secondary-grad);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+    box-shadow: 
+        inset 1.5px 1.5px 0 0 rgba(255, 255, 255, 0.14),
+        inset -1.5px -1.5px 0 0 rgba(0, 0, 0, 0.65),
+        0 10px 30px rgba(0, 0, 0, 0.7);
     overflow: hidden;
     min-height: 0;
     flex: 1;
     transition: border-color var(--tx-med), box-shadow var(--tx-med);
 }
 .panel:hover {
-    border-color: var(--border-medium);
+    border-color: rgba(255, 255, 255, 0.26);
+    box-shadow: 
+        inset 1.5px 1.5px 0 0 rgba(255, 255, 255, 0.2),
+        inset -1.5px -1.5px 0 0 rgba(0, 0, 0, 0.65),
+        0 12px 35px rgba(0, 0, 0, 0.85);
 }
 
 .panel-header {
@@ -311,8 +324,12 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: var(--bg-surface);
+    /* Machined horizontal sheen texture overlay */
+    background: 
+        linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.01) 40%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.01) 60%, rgba(255,255,255,0) 100%),
+        linear-gradient(90deg, #1b2031 0%, #10121b 100%);
     border-bottom: 1px solid var(--border-subtle);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
     flex-shrink: 0;
     gap: 8px;
 }
@@ -345,7 +362,7 @@ body {
     gap: 6px;
 }
 
-/* ── Buttons ────────────────────────────────────────────────────── */
+/* ── Brushed Metal Buttons & Controls ───────────────────────────── */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -363,27 +380,39 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #4f46e5);
+    background: linear-gradient(180deg, #7c7ff7 0%, #4f46e5 100%);
     color: #fff;
-    box-shadow: 0 2px 12px var(--accent-glow);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+        0 4px 12px rgba(79, 70, 229, 0.4);
 }
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--accent-hover), #5b54f0);
-    box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    background: linear-gradient(180deg, #8c8ff8 0%, #5d54f0 100%);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        0 6px 18px rgba(99, 102, 241, 0.5);
     transform: translateY(-1px);
 }
 .btn-primary:active { transform: translateY(0); }
 .btn-primary.running { opacity:0.6; pointer-events:none; }
 
 .btn-ghost {
-    background: transparent;
+    background: linear-gradient(180deg, #1b1e2a 0%, #11131c 100%);
     color: var(--text-secondary);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+        0 2px 4px rgba(0,0,0,0.3);
 }
 .btn-ghost:hover {
     color: var(--text-primary);
-    background: var(--bg-surface);
-    border-color: var(--border-medium);
+    background: linear-gradient(180deg, #24293a 0%, #151822 100%);
+    border-color: rgba(255, 255, 255, 0.24);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+        0 4px 8px rgba(0,0,0,0.45);
 }
 
 /* ── Editor Column ──────────────────────────────────────────────── */
@@ -401,10 +430,10 @@ body {
     padding: 16px 8px 16px 0;
     text-align: right;
     font-family: var(--font-mono);
-    font-size: 0.88rem; /* Scaled up from 0.75rem */
+    font-size: 0.88rem;
     line-height: 1.75;
     color: var(--text-muted);
-    background: rgba(7, 8, 12, 0.4);
+    background: rgba(7, 8, 12, 0.45);
     border-right: 1px solid var(--border-subtle);
     user-select: none;
     overflow: hidden;
@@ -415,7 +444,7 @@ body {
     flex: 1;
     padding: 16px 14px;
     font-family: var(--font-mono);
-    font-size: 0.95rem; /* Scaled up from 0.8rem (14.25px highly readable) */
+    font-size: 0.95rem;
     line-height: 1.75;
     color: var(--text-primary);
     background: transparent;
@@ -436,7 +465,7 @@ body {
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: var(--bg-surface);
+    background: linear-gradient(180deg, #141723 0%, #0d0f17 100%);
     border-top: 1px solid var(--border-subtle);
     flex-shrink: 0;
     overflow-x: auto;
@@ -456,20 +485,26 @@ body {
     font-family: var(--font-sans);
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
-    border: 1px solid var(--border-subtle);
-    background: rgba(255,255,255,0.01);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    background: linear-gradient(180deg, #1f2231 0%, #10121b 100%);
     color: var(--text-secondary);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+        0 2px 4px rgba(0,0,0,0.3);
     cursor: pointer;
     transition: all var(--tx-fast);
     white-space: nowrap;
     flex-shrink: 0;
 }
 .snippet-btn:hover {
-    border-color: rgba(99,102,241,0.4);
-    color: var(--text-accent);
-    background: rgba(99,102,241,0.06);
+    border-color: rgba(255, 255, 255, 0.32);
+    color: var(--text-primary);
+    background: linear-gradient(180deg, #2a2e42 0%, #141723 100%);
+    box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+        0 4px 8px rgba(0,0,0,0.45);
     transform: translateY(-1px);
 }
 
@@ -477,33 +512,39 @@ body {
 .col-pipeline {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Slightly wider gaps between boxes */
+    gap: 8px;
     overflow-y: auto;
     padding-right: 2px;
 }
 .col-pipeline::-webkit-scrollbar { width: 5px; }
 .col-pipeline::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius:3px; }
 
-/* ── Stage Panels (Crisp Colored Top Borders) ───────────────────── */
+/* ── Stage Panels (Double Metallic Bevel Plates) ────────────────── */
 .stage-panel {
     display: flex;
     flex-direction: column;
-    background: var(--bg-secondary);
+    background: var(--bg-secondary-grad);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     overflow: hidden;
     flex-shrink: 0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.45);
+    box-shadow: 
+        inset 1.5px 1.5px 0 0 rgba(255, 255, 255, 0.12),
+        inset -1.5px -1.5px 0 0 rgba(0, 0, 0, 0.55),
+        0 5px 15px rgba(0,0,0,0.5);
     transition: border-color var(--tx-med), transform var(--tx-med), box-shadow var(--tx-med);
 }
 
 .stage-panel:hover {
-    border-color: var(--border-medium);
+    border-color: rgba(255, 255, 255, 0.22);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    box-shadow: 
+        inset 1.5px 1.5px 0 0 rgba(255, 255, 255, 0.18),
+        inset -1.5px -1.5px 0 0 rgba(0, 0, 0, 0.55),
+        0 8px 20px rgba(0,0,0,0.7);
 }
 
-/* Visual distinct colored top bar properties */
+/* Crisp stage colored identifiers on metal headers */
 #panel-lexer     { border-top: 3px solid var(--lexer-color); }
 #panel-syntax    { border-top: 3px solid var(--syntax-color); }
 #panel-semantic  { border-top: 3px solid var(--semantic-color); }
@@ -516,8 +557,11 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    background: var(--bg-surface);
+    background: 
+        linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.01) 40%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.01) 60%, rgba(255,255,255,0) 100%),
+        linear-gradient(90deg, #1a1d29 0%, #10111a 100%);
     border-bottom: 1px solid var(--border-subtle);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     flex-shrink: 0;
 }
 
@@ -557,35 +601,36 @@ body {
     padding: 3px 10px;
     border-radius: 20px;
     letter-spacing: 0.04em;
-    background: rgba(255,255,255,0.03);
+    background: linear-gradient(180deg, #1b1e2b 0%, #0e1017 100%);
     color: var(--text-muted);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.05);
     transition: all var(--tx-fast);
     flex-shrink: 0;
 }
 .stage-badge.pass {
     background: var(--green-dim);
     color: var(--green);
-    border-color: rgba(16,185,129,0.25);
+    border-color: rgba(16,185,129,0.3);
 }
 .stage-badge.fail {
     background: var(--red-dim);
     color: var(--red);
-    border-color: rgba(239,68,68,0.25);
+    border-color: rgba(239,68,68,0.3);
 }
 .stage-badge.warn {
     background: var(--yellow-dim);
     color: var(--yellow);
-    border-color: rgba(245,158,11,0.25);
+    border-color: rgba(245,158,11,0.3);
 }
 
 /* -- Stage body -- */
 .stage-body {
     padding: 10px 14px;
     font-family: var(--font-mono);
-    font-size: 0.83rem; /* Scaled up from 0.72rem */
+    font-size: 0.83rem;
     line-height: 1.65;
-    background: rgba(7, 8, 12, 0.2);
+    background: rgba(7, 8, 12, 0.25);
     overflow: auto;
     max-height: 220px;
 }
@@ -609,7 +654,7 @@ body {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.82rem; /* Scaled up from 0.7rem */
+    font-size: 0.82rem;
 }
 .token-table th {
     font-family: var(--font-sans);
@@ -623,7 +668,7 @@ body {
     border-bottom: 1px solid var(--border-medium);
     position: sticky;
     top: 0;
-    background: var(--bg-surface);
+    background: var(--bg-primary);
     z-index: 1;
 }
 .token-table td {
@@ -631,7 +676,7 @@ body {
     border-bottom: 1px solid rgba(255,255,255,0.02);
     vertical-align: middle;
 }
-.token-table tr:hover td { background: rgba(99,102,241,0.05); }
+.token-table tr:hover td { background: rgba(255, 255, 255, 0.04); }
 .token-table tr:last-child td { border-bottom: none; }
 
 .tok-line {
@@ -715,7 +760,7 @@ body {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.82rem; /* Scaled up */
+    font-size: 0.82rem;
     margin-top: 8px;
 }
 .scope-table th {
@@ -730,7 +775,7 @@ body {
     border-bottom: 1px solid var(--border-medium);
     position: sticky;
     top: 0;
-    background: var(--bg-surface);
+    background: var(--bg-primary);
 }
 .scope-table td {
     padding: 5px 10px;
@@ -785,7 +830,7 @@ body {
     padding: 3px 0;
     color: var(--text-primary);
     font-family: var(--font-mono);
-    font-size: 0.86rem; /* Scaled up from 0.75rem */
+    font-size: 0.86rem;
     animation: fadeIn 0.15s ease;
 }
 .exec-prompt {
@@ -819,12 +864,12 @@ body {
     padding: 14px 10px 14px 6px;
     min-height: 0;
     font-family: var(--font-mono);
-    font-size: 0.83rem; /* Scaled up from 0.72rem */
+    font-size: 0.83rem;
 }
 .ast-body::-webkit-scrollbar { width: 5px; }
 .ast-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius:3px; }
 
-/* ── Branching tree layout ──────────────────────────────────────── */
+/* ── Branching tree connector lines ─────────────────────────────── */
 .ast-tree {
     list-style: none;
     margin: 0;
@@ -834,11 +879,10 @@ body {
 /* Each node item */
 .ast-tree li {
     position: relative;
-    padding-left: 24px;   /* space for the branch glyph */
+    padding-left: 24px;
     margin: 0;
 }
 
-/* ── Branch connector lines ─────────────────────────────────────── */
 .ast-tree li::before {
     content: '';
     position: absolute;
@@ -888,7 +932,7 @@ body {
     white-space: nowrap;
     position: relative;
 }
-.ast-node-row:hover { background: rgba(99,102,241,0.08); }
+.ast-node-row:hover { background: rgba(255, 255, 255, 0.05); }
 
 /* Toggle arrow */
 .ast-toggle {
@@ -900,12 +944,12 @@ body {
     transition: color var(--tx-fast);
 }
 .ast-toggle.has-children { color: var(--text-secondary); cursor: pointer; }
-.ast-toggle.leaf-dot     { color: rgba(99,102,241,0.35); font-size: 0.55rem; cursor: default; }
+.ast-toggle.leaf-dot     { color: rgba(255, 255, 255, 0.25); font-size: 0.55rem; cursor: default; }
 
 /* ── Node name colours by category ──────────────────────────────── */
 .ast-node-name {
     font-weight: 700;
-    font-size: 0.82rem; /* Scaled up from 0.7rem */
+    font-size: 0.82rem;
 }
 /* Internal / structural nodes */
 .ast-cat-program   { color: var(--text-accent); }
@@ -934,7 +978,7 @@ body {
 
 /* Inline field annotations */
 .ast-node-fields {
-    font-size: 0.76rem; /* Scaled up from 0.6rem */
+    font-size: 0.76rem;
     color: var(--text-muted);
     font-weight: 500;
     margin-left: 4px;
@@ -945,7 +989,7 @@ body {
 
 /* Edge label (field name, e.g. "left:", "condition:") */
 .ast-edge-label {
-    font-size: 0.74rem; /* Scaled up from 0.58rem */
+    font-size: 0.74rem;
     color: var(--text-muted);
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -974,9 +1018,11 @@ body {
     padding: 6px 20px;
     font-size: 0.7rem;
     color: var(--text-muted);
-    background: var(--bg-secondary);
+    background: linear-gradient(180deg, #151824 0%, #0d0f15 100%);
     border-top: 1px solid var(--border-subtle);
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+    box-shadow: 
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 -4px 15px rgba(0,0,0,0.4);
     flex-shrink: 0;
 }
 .footer-sep { opacity:0.3; }
@@ -986,7 +1032,7 @@ kbd {
     font-size: 0.68rem;
     padding: 2px 6px;
     border-radius: 4px;
-    background: var(--bg-surface);
+    background: linear-gradient(180deg, #1b2031 0%, #11131e 100%);
     border: 1px solid var(--border-medium);
     color: var(--text-secondary);
 }
@@ -994,8 +1040,8 @@ kbd {
 /* ── Scrollbars (global) ────────────────────────────────────────── */
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
-::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.18); }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.22); }
 
 /* ── Animations ─────────────────────────────────────────────────── */
 @keyframes fadeIn {
@@ -1012,12 +1058,12 @@ kbd {
 
 @keyframes flashGreen {
     0%   { border-top-color: var(--border-subtle); }
-    30%  { border-top-color: rgba(16,185,129,0.5); }
+    30%  { border-top-color: rgba(16,185,129,0.6); }
     100% { border-top-color: var(--border-subtle); }
 }
 @keyframes flashRed {
     0%   { border-top-color: var(--border-subtle); }
-    30%  { border-top-color: rgba(239,68,68,0.5); }
+    30%  { border-top-color: rgba(239,68,68,0.6); }
     100% { border-top-color: var(--border-subtle); }
 }
 
